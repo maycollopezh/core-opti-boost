@@ -2,11 +2,39 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useOpti, type TransportData } from "@/lib/opticore-context";
-import { Plus, Trash2, Truck, Coins } from "lucide-react";
+import { Plus, Trash2, Truck, Coins, AlertTriangle } from "lucide-react";
 import { AnimatedNumber } from "./AnimatedNumber";
+import { solveTransport } from "@/lib/solver";
+import { useEffect, useMemo } from "react";
 
 export function TransportSection() {
   const { transport, setTransport } = useOpti();
+
+  const solution = useMemo(
+    () =>
+      solveTransport(
+        transport.supplies.map((s) => s.capacity),
+        transport.demands.map((d) => d.demand),
+        transport.costs,
+      ),
+    [transport.supplies, transport.demands, transport.costs],
+  );
+
+  // Sync solver output into context so other modules (report) can read it
+  useEffect(() => {
+    setTransport((prev) => {
+      const sameCost = prev.optimalCost === solution.optimalCost;
+      const sameAssignment =
+        prev.assignment.length === solution.assignment.length &&
+        prev.assignment.every(
+          (row, i) =>
+            row.length === (solution.assignment[i]?.length ?? 0) &&
+            row.every((v, j) => v === solution.assignment[i]?.[j]),
+        );
+      if (sameCost && sameAssignment) return prev;
+      return { ...prev, assignment: solution.assignment, optimalCost: solution.optimalCost };
+    });
+  }, [solution, setTransport]);
 
   const updateCost = (i: number, j: number, v: number) =>
     setTransport((prev: TransportData) => {
@@ -221,15 +249,22 @@ export function TransportSection() {
               <Coins className="h-5 w-5 text-accent" />
               Costo Mínimo de Operación
             </CardTitle>
-            <CardDescription>Resultado del modelo óptimo</CardDescription>
+            <CardDescription>
+              {solution.feasible
+                ? "Calculado vía Programación Lineal (Simplex)"
+                : "Modelo infactible con los parámetros actuales"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-5xl font-black tracking-tight text-accent">
-              <AnimatedNumber value={transport.optimalCost} prefix="Bs. " />
+              <AnimatedNumber value={solution.optimalCost} prefix="Bs. " />
             </div>
-            <div className="mt-2 text-sm text-muted-foreground">
-              Reducción estimada vs. asignación manual: 18%
-            </div>
+            {!solution.feasible && (
+              <div className="mt-3 flex items-center gap-2 text-xs text-destructive">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Verifique capacidades, demandas y costos ingresados.
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
