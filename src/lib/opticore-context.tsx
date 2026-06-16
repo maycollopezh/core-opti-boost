@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import type { ConstraintOp } from "./solver";
 
 export interface CompanyProfile {
   name: string;
@@ -8,10 +9,22 @@ export interface CompanyProfile {
   demandName: string;
 }
 
-export interface SimplexInputs {
-  resource1: number;
-  resource2: number;
-  demand: number;
+export interface SimplexVariableInput {
+  name: string;
+  coef: number;
+}
+
+export interface SimplexConstraintInput {
+  name: string;
+  coefs: number[];
+  op: ConstraintOp;
+  rhs: number;
+}
+
+export interface SimplexModelInput {
+  opType: "max" | "min";
+  variables: SimplexVariableInput[];
+  constraints: SimplexConstraintInput[];
 }
 
 export interface TransportData {
@@ -25,8 +38,8 @@ export interface TransportData {
 interface Ctx {
   profile: CompanyProfile;
   setProfile: (p: Partial<CompanyProfile>) => void;
-  simplex: SimplexInputs;
-  setSimplex: (p: Partial<SimplexInputs>) => void;
+  simplex: SimplexModelInput;
+  setSimplex: (updater: SimplexModelInput | ((prev: SimplexModelInput) => SimplexModelInput)) => void;
   transport: TransportData;
   setTransport: (updater: TransportData | ((prev: TransportData) => TransportData)) => void;
   report: string | null;
@@ -43,10 +56,17 @@ export function OptiProvider({ children }: { children: ReactNode }) {
     resource2Name: "Horas de Técnico",
     demandName: "Solicitudes Mínimas",
   });
-  const [simplex, setSimplexState] = useState<SimplexInputs>({
-    resource1: 60,
-    resource2: 80,
-    demand: 120,
+  const [simplex, setSimplexState] = useState<SimplexModelInput>({
+    opType: "max",
+    variables: [
+      { name: "x1", coef: 3 },
+      { name: "x2", coef: 5 },
+    ],
+    constraints: [
+      { name: "R1", coefs: [1, 0], op: "<=", rhs: 4 },
+      { name: "R2", coefs: [0, 2], op: "<=", rhs: 12 },
+      { name: "R3", coefs: [3, 2], op: "<=", rhs: 18 },
+    ],
   });
   const [transport, setTransportState] = useState<TransportData>({
     supplies: [
@@ -62,10 +82,10 @@ export function OptiProvider({ children }: { children: ReactNode }) {
       [10, 9],
     ],
     assignment: [
-      [40, 10],
-      [0, 50],
+      [0, 0],
+      [0, 0],
     ],
-    optimalCost: 1100,
+    optimalCost: 0,
   });
   const [report, setReport] = useState<string | null>(null);
 
@@ -74,7 +94,10 @@ export function OptiProvider({ children }: { children: ReactNode }) {
       profile,
       setProfile: (p) => setProfileState((prev) => ({ ...prev, ...p })),
       simplex,
-      setSimplex: (p) => setSimplexState((prev) => ({ ...prev, ...p })),
+      setSimplex: (u) =>
+        setSimplexState((prev) =>
+          typeof u === "function" ? (u as (p: SimplexModelInput) => SimplexModelInput)(prev) : u,
+        ),
       transport,
       setTransport: (u) =>
         setTransportState((prev) => (typeof u === "function" ? (u as (p: TransportData) => TransportData)(prev) : u)),
