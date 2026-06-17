@@ -11,28 +11,40 @@ export function AISection() {
   const generate = async () => {
     setLoading(true);
     setReport(null);
-    await new Promise((r) => setTimeout(r, 1600));
-    const text = `REPORTE GERENCIAL EJECUTIVO · ${profile.name}
-Rubro: ${profile.industry}
-Fecha: ${new Date().toLocaleDateString("es-BO")}
+    
+    try {
+      // 1. Empaquetamos todos los resultados matemáticos (Simplex y Transporte)
+      const datosModelo = {
+        optimizacion: simplex,
+        logistica: transport
+      };
 
-1. RESUMEN ESTRATÉGICO
-El análisis de optimización aplicado sobre ${profile.name} identifica la combinación de productos y servicios que maximiza el beneficio operativo, concentrando la capacidad productiva en aquellas líneas con mayor margen unitario. Esto sugiere una especialización clara del flujo operativo hacia los servicios más rentables.
+      // 2. Hacemos la petición a tu webhook de Make.com
+      const response = await fetch("https://hook.us2.make.com/jd93ggdb1y16hbvjl5epqif3ndakbklq", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reporte", // Esto dirige el flujo por la Ruta A en Make
+          company_name: profile.name,
+          industry: profile.industry,
+          datos_modelo: JSON.stringify(datosModelo) // Pasamos toda la matriz matemática
+        })
+      });
 
-2. ANÁLISIS DE DUALIDAD
-Los recursos limitantes con precio sombra positivo representan los cuellos de botella reales del negocio: ampliar su disponibilidad incrementa directamente el beneficio operativo. Se recomienda priorizar inversión en estos recursos antes que en aquellos con holgura.
+      if (!response.ok) throw new Error("Error en la respuesta del servidor");
 
-3. DISTRIBUCIÓN LOGÍSTICA
-El modelo de Transporte arroja un Costo Mínimo de Operación de Bs. ${transport.optimalCost.toLocaleString("es-BO")}, optimizando la asignación entre los nodos de oferta y los destinos definidos. La ruta más eficiente concentra el flujo virtualizado hacia El Alto, aprovechando su menor costo unitario.
+      // 3. Recibimos el texto dinámico generado por la IA
+      const text = await response.text();
+      
+      // 4. Mostramos el reporte en pantalla
+      setReport(text);
 
-4. RECOMENDACIONES
- • Reinvertir el excedente de eficiencia en capacitación técnica.
- • Auditar trimestralmente las restricciones para reajustar los precios sombra.
- • Escalar la infraestructura virtualizada como palanca de margen.
-
-— Generado por OptiCore AI Strategic Engine —`;
-    setReport(text);
-    setLoading(false);
+    } catch (error) {
+      console.error("Error al generar el reporte:", error);
+      setReport("Lo siento, hubo un problema de conexión con el motor estratégico. Por favor, intenta generar el reporte nuevamente.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
