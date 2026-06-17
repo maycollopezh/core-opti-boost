@@ -1,17 +1,19 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, X, Send, Bot, User } from "lucide-react";
+import { MessageSquare, X, Send, Bot, User, Loader2 } from "lucide-react";
 import { useOpti } from "@/lib/opticore-context";
 import { cn } from "@/lib/utils";
 
 interface Msg { role: "ai" | "user"; text: string }
 
 export function ChatWidget() {
-  const { profile } = useOpti();
+  // Extraemos profile y simplex del contexto global
+  const { profile, simplex } = useOpti();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Msg[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,24 +25,48 @@ export function ChatWidget() {
     ]);
   }, [profile.name]);
 
+  // Hacemos que el scroll baje automáticamente también cuando la IA está escribiendo
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, open]);
+  }, [messages, open, isTyping]);
 
-  const send = () => {
-    if (!input.trim()) return;
+  const send = async () => {
+    if (!input.trim() || isTyping) return;
     const user = input.trim();
+    
+    // 1. Mostrar mensaje del usuario inmediatamente
     setMessages((m) => [...m, { role: "user", text: user }]);
     setInput("");
-    setTimeout(() => {
+    setIsTyping(true); // Activa el estado de carga
+
+    try {
+      // 2. Conectar con el Webhook de Make.com
+      const response = await fetch("https://hook.us2.make.com/jd93ggdb1y16hbvjl5epqif3ndakbklq", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "chat",
+          company_name: profile.name,
+          datos_modelo: JSON.stringify(simplex), // Mandamos la matriz matemática actual
+          mensaje_usuario: user // La pastilla que espera el Router
+        })
+      });
+
+      if (!response.ok) throw new Error("Error en la respuesta del servidor");
+
+      // 3. Recibir y mostrar la respuesta de OpenAI
+      const replyText = await response.text();
+      setMessages((m) => [...m, { role: "ai", text: replyText }]);
+
+    } catch (error) {
+      console.error("Error en el chat:", error);
       setMessages((m) => [
         ...m,
-        {
-          role: "ai",
-          text: `Analizando sensibilidad para "${user}"... Si incrementas ese parámetro en 10%, la función objetivo Z subiría aproximadamente Bs. 150 manteniendo la región factible estable. Recomiendo validar el precio sombra del recurso involucrado.`,
-        },
+        { role: "ai", text: "Lo siento, tuve un problema de conexión con el motor estratégico. ¿Podemos intentarlo de nuevo?" }
       ]);
-    }, 700);
+    } finally {
+      setIsTyping(false); // Apaga el estado de carga
+    }
   };
 
   return (
@@ -92,6 +118,19 @@ export function ChatWidget() {
               </div>
             </div>
           ))}
+          
+          {/* Indicador de "Escribiendo..." */}
+          {isTyping && (
+            <div className="flex gap-2">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                <Bot className="h-3.5 w-3.5" />
+              </div>
+              <div className="rounded-2xl px-3 py-2 text-sm max-w-[80%] bg-muted/50 text-foreground rounded-tl-sm flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span className="text-xs opacity-70">Pensando...</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 border-t border-border/60 p-3">
@@ -101,8 +140,9 @@ export function ChatWidget() {
             onKeyDown={(e) => e.key === "Enter" && send()}
             placeholder="Ej. ¿Y si subo 10% el costo a La Paz?"
             className="h-9"
+            disabled={isTyping} // Bloquea el input mientras responde
           />
-          <Button size="icon" onClick={send} className="h-9 w-9 shrink-0">
+          <Button size="icon" onClick={send} disabled={isTyping} className="h-9 w-9 shrink-0">
             <Send className="h-4 w-4" />
           </Button>
         </div>
