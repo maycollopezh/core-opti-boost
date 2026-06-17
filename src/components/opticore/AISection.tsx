@@ -17,10 +17,10 @@ Rubro: ${profile.industry}
 Fecha: ${new Date().toLocaleDateString("es-BO")}
 
 1. RESUMEN ESTRATÉGICO
-El modelo Simplex aplicado sobre los recursos de ${profile.name} indica que la organización opera bajo una eficiencia óptima de Bs. 1.500, concentrando el 100% de la capacidad productiva en la variable x₂ (${profile.resource2Name}). Esto sugiere una especialización clara del flujo operativo hacia el servicio de mayor margen unitario.
+El análisis de optimización aplicado sobre ${profile.name} identifica la combinación de productos y servicios que maximiza el beneficio operativo, concentrando la capacidad productiva en aquellas líneas con mayor margen unitario. Esto sugiere una especialización clara del flujo operativo hacia los servicios más rentables.
 
 2. ANÁLISIS DE DUALIDAD
-El precio sombra del recurso "${profile.resource2Name}" es positivo, lo que implica que cada hora adicional contratada incrementa la función objetivo. Se recomienda evaluar la ampliación de la plantilla técnica o la automatización parcial mediante virtualización.
+Los recursos limitantes con precio sombra positivo representan los cuellos de botella reales del negocio: ampliar su disponibilidad incrementa directamente el beneficio operativo. Se recomienda priorizar inversión en estos recursos antes que en aquellos con holgura.
 
 3. DISTRIBUCIÓN LOGÍSTICA
 El modelo de Transporte arroja un Costo Mínimo de Operación de Bs. ${transport.optimalCost.toLocaleString("es-BO")}, optimizando la asignación entre los nodos de oferta y los destinos definidos. La ruta más eficiente concentra el flujo virtualizado hacia El Alto, aprovechando su menor costo unitario.
