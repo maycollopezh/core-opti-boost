@@ -60,7 +60,10 @@ export function TransportSection() {
   const addSupply = () =>
     setTransport((prev) => ({
       ...prev,
-      supplies: [...prev.supplies, { name: `Nodo ${prev.supplies.length + 1}`, capacity: 30 }],
+      supplies: [
+        ...prev.supplies,
+        { name: `Origen ${prev.supplies.length + 1}`, capacity: 30 },
+      ],
       costs: [...prev.costs, prev.demands.map(() => 10)],
       assignment: [...prev.assignment, prev.demands.map(() => 0)],
     }));
@@ -76,7 +79,10 @@ export function TransportSection() {
   const addDemand = () =>
     setTransport((prev) => ({
       ...prev,
-      demands: [...prev.demands, { name: `Destino ${prev.demands.length + 1}`, demand: 20 }],
+      demands: [
+        ...prev.demands,
+        { name: `Destino ${prev.demands.length + 1}`, demand: 20 },
+      ],
       costs: prev.costs.map((row) => [...row, 10]),
       assignment: prev.assignment.map((row) => [...row, 0]),
     }));
@@ -95,18 +101,31 @@ export function TransportSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Truck className="h-5 w-5 text-primary" />
-            Módulo de Distribución Logística
+            Plan de Distribución Logística
           </CardTitle>
           <CardDescription>
-            Modelo de Transporte · Costos unitarios en Bolivianos (Bs.)
+            Optimiza el envío desde tus plantas hacia tus clientes · Costos en Bolivianos (Bs.)
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-3 grid gap-3 sm:grid-cols-2 text-xs text-muted-foreground">
+            <div className="rounded-lg border border-border/60 bg-background/40 p-3">
+              <span className="font-semibold text-foreground">Orígenes (Plantas / Almacenes):</span>{" "}
+              dónde se produce o almacena el inventario disponible.
+            </div>
+            <div className="rounded-lg border border-border/60 bg-background/40 p-3">
+              <span className="font-semibold text-foreground">Destinos (Tiendas / Clientes):</span>{" "}
+              dónde necesitas entregar y en qué cantidad.
+            </div>
+          </div>
           <div className="overflow-x-auto rounded-xl border border-border/60">
             <table className="w-full text-sm">
               <thead className="bg-muted/40">
                 <tr>
-                  <th className="p-3 text-left font-medium text-muted-foreground">Oferta \ Destino</th>
+                  <th className="p-3 text-left font-medium text-muted-foreground">
+                    Orígenes (Plantas / Almacenes)
+                    <div className="text-[10px] font-normal">↓ filas · Destinos → columnas</div>
+                  </th>
                   {transport.demands.map((d, j) => (
                     <th key={j} className="p-3 text-left">
                       <div className="flex items-center gap-2">
@@ -114,6 +133,7 @@ export function TransportSection() {
                           value={d.name}
                           onChange={(e) => updateDemand(j, "name", e.target.value)}
                           className="h-8 w-32"
+                          placeholder="Tienda / Cliente"
                         />
                         <Button
                           size="icon"
@@ -130,13 +150,13 @@ export function TransportSection() {
                         value={d.demand}
                         onChange={(e) => updateDemand(j, "demand", Number(e.target.value) || 0)}
                         className="mt-1 h-8 w-32 text-xs"
-                        placeholder="Demanda"
+                        placeholder="Unidades requeridas"
                       />
                     </th>
                   ))}
                   <th className="p-3">
                     <Button size="sm" variant="outline" onClick={addDemand}>
-                      <Plus className="h-3.5 w-3.5 mr-1" /> Destino
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Añadir Destino
                     </Button>
                   </th>
                 </tr>
@@ -150,6 +170,7 @@ export function TransportSection() {
                           value={s.name}
                           onChange={(e) => updateSupply(i, "name", e.target.value)}
                           className="h-8 w-44"
+                          placeholder="Planta / Almacén"
                         />
                         <Button
                           size="icon"
@@ -166,19 +187,24 @@ export function TransportSection() {
                         value={s.capacity}
                         onChange={(e) => updateSupply(i, "capacity", Number(e.target.value) || 0)}
                         className="mt-1 h-8 w-44 text-xs"
-                        placeholder="Capacidad"
+                        placeholder="Unidades disponibles"
                       />
                     </td>
                     {transport.demands.map((_, j) => (
                       <td key={j} className="p-3">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <span>Bs.</span>
-                          <Input
-                            type="number"
-                            value={transport.costs[i]?.[j] ?? 0}
-                            onChange={(e) => updateCost(i, j, Number(e.target.value) || 0)}
-                            className="h-9 w-20 font-semibold"
-                          />
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Costo de envío unitario (Bs.)
+                          </span>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <span>Bs.</span>
+                            <Input
+                              type="number"
+                              value={transport.costs[i]?.[j] ?? 0}
+                              onChange={(e) => updateCost(i, j, Number(e.target.value) || 0)}
+                              className="h-9 w-24 font-semibold"
+                            />
+                          </div>
                         </div>
                       </td>
                     ))}
@@ -188,7 +214,7 @@ export function TransportSection() {
                 <tr className="border-t border-border/60">
                   <td className="p-3">
                     <Button size="sm" variant="outline" onClick={addSupply}>
-                      <Plus className="h-3.5 w-3.5 mr-1" /> Oferta
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Añadir Origen
                     </Button>
                   </td>
                 </tr>
@@ -201,15 +227,19 @@ export function TransportSection() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2 border-border/60 bg-card/80">
           <CardHeader>
-            <CardTitle className="text-base">Asignación Óptima</CardTitle>
-            <CardDescription>Unidades distribuidas hacia cada destino</CardDescription>
+            <CardTitle className="text-base">Plan de Envíos Recomendado</CardTitle>
+            <CardDescription>
+              Unidades a enviar desde cada origen hacia cada destino
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto rounded-xl border border-border/60">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40">
                   <tr>
-                    <th className="p-3 text-left text-muted-foreground">Origen</th>
+                    <th className="p-3 text-left text-muted-foreground">
+                      Origen (Planta / Almacén)
+                    </th>
                     {transport.demands.map((d, j) => (
                       <th key={j} className="p-3 text-left">{d.name}</th>
                     ))}
@@ -247,12 +277,12 @@ export function TransportSection() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Coins className="h-5 w-5 text-accent" />
-              Costo Mínimo de Operación
+              Costo Total del Plan de Envíos
             </CardTitle>
             <CardDescription>
               {solution.feasible
-                ? "Calculado vía Programación Lineal (Simplex)"
-                : "Modelo infactible con los parámetros actuales"}
+                ? "Mínimo posible aplicando la combinación óptima de rutas"
+                : "Datos inconsistentes: revisa capacidades, demandas y costos"}
             </CardDescription>
           </CardHeader>
           <CardContent>

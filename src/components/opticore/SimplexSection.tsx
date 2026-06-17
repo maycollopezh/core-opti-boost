@@ -25,7 +25,7 @@ import {
   Legend,
   ReferenceDot,
 } from "recharts";
-import { Activity, TrendingUp, Sigma, Layers, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { Activity, TrendingUp, Sigma, Layers, Plus, Trash2, AlertTriangle, Package, Boxes } from "lucide-react";
 
 export function SimplexSection() {
   const { profile, simplex, setSimplex } = useOpti();
@@ -43,7 +43,10 @@ export function SimplexSection() {
   const addVariable = () =>
     setSimplex((prev: SimplexModelInput) => ({
       ...prev,
-      variables: [...prev.variables, { name: `x${prev.variables.length + 1}`, coef: 1 }],
+      variables: [
+        ...prev.variables,
+        { name: `Producto ${prev.variables.length + 1}`, coef: 1 },
+      ],
       constraints: prev.constraints.map((c) => ({ ...c, coefs: [...c.coefs, 0] })),
     }));
 
@@ -60,7 +63,7 @@ export function SimplexSection() {
       constraints: [
         ...prev.constraints,
         {
-          name: `R${prev.constraints.length + 1}`,
+          name: `Recurso ${prev.constraints.length + 1}`,
           coefs: prev.variables.map(() => 0),
           op: "<=",
           rhs: 0,
@@ -97,6 +100,8 @@ export function SimplexSection() {
   const setOpType = (op: "max" | "min") => setSimplex((prev) => ({ ...prev, opType: op }));
 
   const twoVars = simplex.variables.length === 2;
+  const isMax = simplex.opType === "max";
+  const unitLabel = isMax ? "Margen de Ganancia unitario (Bs.)" : "Costo unitario (Bs.)";
 
   const chartData = useMemo(() => {
     if (!twoVars) return [];
@@ -147,22 +152,27 @@ export function SimplexSection() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5 text-primary" />
-                Modelo de Programación Lineal
+                Plan de Optimización del Negocio
               </CardTitle>
               <CardDescription>
-                Método Simplex universal · {profile.name} · Resultados en Bs.
+                {profile.name} · Resultados expresados en Bolivianos (Bs.)
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Select value={simplex.opType} onValueChange={(v) => setOpType(v as "max" | "min")}>
-                <SelectTrigger className="h-9 w-36">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="max">Maximizar Z</SelectItem>
-                  <SelectItem value="min">Minimizar Z</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  ¿Cuál es el objetivo principal?
+                </span>
+                <Select value={simplex.opType} onValueChange={(v) => setOpType(v as "max" | "min")}>
+                  <SelectTrigger className="h-9 w-60">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="max">Maximizar Ganancias</SelectItem>
+                    <SelectItem value="min">Minimizar Costos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -170,40 +180,57 @@ export function SimplexSection() {
           {/* Objective function */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                Función Objetivo · Z = Σ cᵢ · xᵢ
+              <div>
+                <div className="text-sm font-semibold flex items-center gap-2">
+                  <Package className="h-4 w-4 text-primary" />
+                  Productos o Servicios a Ofrecer
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Define cada línea de negocio y su {isMax ? "margen de ganancia" : "costo"} unitario en Bs.
+                </div>
               </div>
               <Button size="sm" variant="outline" onClick={addVariable}>
-                <Plus className="mr-1 h-3.5 w-3.5" /> Variable
+                <Plus className="mr-1 h-3.5 w-3.5" /> Añadir Producto/Servicio
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {simplex.variables.map((v, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-1 rounded-lg border border-border/60 bg-background/50 p-2"
+                  className="flex flex-col gap-2 rounded-lg border border-border/60 bg-background/50 p-3"
                 >
-                  <Input
-                    type="number"
-                    value={v.coef}
-                    onChange={(e) => updateVar(i, { coef: Number(e.target.value) || 0 })}
-                    className="h-8 w-20 font-bold"
-                  />
-                  <span className="text-muted-foreground">·</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Nombre del producto/servicio
+                    </label>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => removeVariable(i)}
+                      disabled={simplex.variables.length <= 1}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                   <Input
                     value={v.name}
                     onChange={(e) => updateVar(i, { name: e.target.value })}
-                    className="h-8 w-20"
+                    placeholder="Ej. Mantenimiento Servidores"
+                    className="h-9"
                   />
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7"
-                    onClick={() => removeVariable(i)}
-                    disabled={simplex.variables.length <= 1}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {unitLabel}
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground">Bs.</span>
+                    <Input
+                      type="number"
+                      value={v.coef}
+                      onChange={(e) => updateVar(i, { coef: Number(e.target.value) || 0 })}
+                      className="h-9 font-bold"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -212,11 +239,17 @@ export function SimplexSection() {
           {/* Constraints */}
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                Restricciones (Recursos)
+              <div>
+                <div className="text-sm font-semibold flex items-center gap-2">
+                  <Boxes className="h-4 w-4 text-accent" />
+                  Recursos Limitantes (Tus cuellos de botella)
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Indica cuánto consume cada producto y la disponibilidad total del recurso.
+                </div>
               </div>
               <Button size="sm" variant="outline" onClick={addConstraint}>
-                <Plus className="mr-1 h-3.5 w-3.5" /> Restricción
+                <Plus className="mr-1 h-3.5 w-3.5" /> Añadir Recurso
               </Button>
             </div>
             <div className="overflow-x-auto rounded-xl border border-border/60">
@@ -226,11 +259,16 @@ export function SimplexSection() {
                     <th className="p-2 text-left text-muted-foreground">Recurso</th>
                     {simplex.variables.map((v, i) => (
                       <th key={i} className="p-2 text-left text-primary">
-                        {v.name || `x${i + 1}`}
+                        <div>{v.name || `Producto ${i + 1}`}</div>
+                        <div className="text-[10px] font-normal text-muted-foreground">
+                          ¿Cuánto consume 1 unidad?
+                        </div>
                       </th>
                     ))}
                     <th className="p-2 text-left text-muted-foreground">Op.</th>
-                    <th className="p-2 text-left text-muted-foreground">Disponibilidad</th>
+                    <th className="p-2 text-left text-muted-foreground">
+                      Disponibilidad Total del Recurso
+                    </th>
                     <th />
                   </tr>
                 </thead>
@@ -241,7 +279,8 @@ export function SimplexSection() {
                         <Input
                           value={c.name}
                           onChange={(e) => updateConstraint(ci, { name: e.target.value })}
-                          className="h-8 w-28"
+                          className="h-8 w-44"
+                          placeholder="Ej. Horas Técnico"
                         />
                       </td>
                       {simplex.variables.map((_, vi) => (
@@ -311,7 +350,7 @@ export function SimplexSection() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           icon={<TrendingUp className="h-4 w-4" />}
-          label={`Z ${simplex.opType === "max" ? "Máximo" : "Mínimo"}`}
+          label={isMax ? "Beneficio Operativo Estimado" : "Costo Operativo Estimado"}
           value={<AnimatedNumber value={z} prefix="Bs. " />}
           highlight
         />
@@ -319,7 +358,7 @@ export function SimplexSection() {
           <MetricCard
             key={i}
             icon={<Sigma className="h-4 w-4" />}
-            label={`${v.name || `x${i + 1}`} (óptimo)`}
+            label={`Unidades a producir de ${v.name || `Producto ${i + 1}`}`}
             value={<AnimatedNumber value={result.values[i] ?? 0} />}
           />
         ))}
@@ -329,7 +368,7 @@ export function SimplexSection() {
       {simplex.variables.length > 3 && (
         <Card className="border-border/60 bg-card/80">
           <CardHeader>
-            <CardTitle className="text-base">Valores Óptimos de Variables</CardTitle>
+            <CardTitle className="text-base">Plan Óptimo de Producción</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
@@ -338,7 +377,9 @@ export function SimplexSection() {
                   key={i}
                   className="rounded-lg border border-border/60 bg-background/40 p-3 text-center"
                 >
-                  <div className="text-xs text-muted-foreground">{v.name || `x${i + 1}`}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Unidades de {v.name || `Producto ${i + 1}`}
+                  </div>
                   <div className="mt-1 font-bold text-primary">
                     {(result.values[i] ?? 0).toLocaleString("es-BO")}
                   </div>
@@ -352,11 +393,11 @@ export function SimplexSection() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2 border-border/60 bg-card/80">
           <CardHeader>
-            <CardTitle className="text-base">Método Gráfico · Región Factible</CardTitle>
+            <CardTitle className="text-base">Visualización de Escenarios Posibles</CardTitle>
             <CardDescription>
               {twoVars
-                ? "Intersección de restricciones sobre el plano (x₁, x₂)"
-                : "Disponible únicamente con 2 variables de decisión"}
+                ? "Combinaciones viables entre tus dos productos/servicios"
+                : "Disponible únicamente cuando ofreces exactamente 2 productos/servicios"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -376,12 +417,12 @@ export function SimplexSection() {
                       type="number"
                       stroke="var(--color-muted-foreground)"
                       fontSize={11}
-                      label={{ value: simplex.variables[0]?.name ?? "x₁", position: "insideBottomRight", offset: -5, fill: "var(--color-muted-foreground)" }}
+                      label={{ value: simplex.variables[0]?.name ?? "Producto 1", position: "insideBottomRight", offset: -5, fill: "var(--color-muted-foreground)" }}
                     />
                     <YAxis
                       stroke="var(--color-muted-foreground)"
                       fontSize={11}
-                      label={{ value: simplex.variables[1]?.name ?? "x₂", angle: -90, position: "insideLeft", fill: "var(--color-muted-foreground)" }}
+                      label={{ value: simplex.variables[1]?.name ?? "Producto 2", angle: -90, position: "insideLeft", fill: "var(--color-muted-foreground)" }}
                     />
                     <Tooltip
                       contentStyle={{
@@ -395,7 +436,7 @@ export function SimplexSection() {
                     <Area
                       type="monotone"
                       dataKey="feasible"
-                      name="Región Factible"
+                      name="Escenarios Viables"
                       stroke="var(--color-primary)"
                       fill="url(#feasible)"
                       isAnimationActive={false}
@@ -438,8 +479,8 @@ export function SimplexSection() {
               <div className="flex h-[340px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 bg-background/40 text-center">
                 <Layers className="h-8 w-8 text-muted-foreground" />
                 <div className="max-w-sm text-sm text-muted-foreground">
-                  Gráfica no disponible para modelos de más de 2 dimensiones, revise los
-                  resultados numéricos.
+                  La gráfica se muestra solo cuando ofreces exactamente 2 productos o servicios. Revisa
+                  los resultados numéricos arriba.
                 </div>
               </div>
             )}
@@ -448,8 +489,8 @@ export function SimplexSection() {
 
         <Card className="border-border/60 bg-card/80">
           <CardHeader>
-            <CardTitle className="text-base">Análisis Dual</CardTitle>
-            <CardDescription>Precios sombra y holguras por restricción</CardDescription>
+            <CardTitle className="text-base">Diagnóstico de Recursos</CardTitle>
+            <CardDescription>Valor estratégico y sobrante por cada recurso</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {simplex.constraints.map((c, i) => (
@@ -461,9 +502,10 @@ export function SimplexSection() {
               />
             ))}
             <div className="mt-4 rounded-lg border border-primary/30 bg-primary/10 p-3">
-              <div className="text-xs uppercase tracking-wider text-primary/80">Punto óptimo</div>
+              <div className="text-xs uppercase tracking-wider text-primary/80">
+                {isMax ? "Beneficio Operativo Estimado" : "Costo Operativo Estimado"}
+              </div>
               <div className="mt-1 text-sm">
-                Z ={" "}
                 <span className="font-bold text-primary">
                   Bs. {z.toLocaleString("es-BO", { maximumFractionDigits: 2 })}
                 </span>
@@ -516,11 +558,11 @@ function DualRow({ name, shadow, slack }: { name: string; shadow: number; slack:
       <div className="text-sm font-medium">{name}</div>
       <div className="mt-2 flex items-center justify-between text-xs">
         <div>
-          <div className="text-muted-foreground">Precio Sombra</div>
+          <div className="text-muted-foreground">Valor de 1 unidad adicional</div>
           <div className="font-bold text-accent">Bs. {shadow.toFixed(2)}</div>
         </div>
         <Badge variant="outline" className="border-border/60">
-          Holgura: {slack.toLocaleString("es-BO", { maximumFractionDigits: 2 })}
+          Recurso sobrante: {slack.toLocaleString("es-BO", { maximumFractionDigits: 2 })}
         </Badge>
       </div>
     </div>
