@@ -4,9 +4,6 @@ import type { ConstraintOp } from "./solver";
 export interface CompanyProfile {
   name: string;
   industry: string;
-  resource1Name: string;
-  resource2Name: string;
-  demandName: string;
 }
 
 export interface SimplexVariableInput {
@@ -52,20 +49,17 @@ export function OptiProvider({ children }: { children: ReactNode }) {
   const [profile, setProfileState] = useState<CompanyProfile>({
     name: "DataCom Bolivia",
     industry: "Servicios IT",
-    resource1Name: "Computadoras Físicas",
-    resource2Name: "Horas de Técnico",
-    demandName: "Solicitudes Mínimas",
   });
   const [simplex, setSimplexState] = useState<SimplexModelInput>({
     opType: "max",
     variables: [
-      { name: "x1", coef: 3 },
-      { name: "x2", coef: 5 },
+      { name: "Producto A", coef: 3 },
+      { name: "Producto B", coef: 5 },
     ],
     constraints: [
-      { name: "R1", coefs: [1, 0], op: "<=", rhs: 4 },
-      { name: "R2", coefs: [0, 2], op: "<=", rhs: 12 },
-      { name: "R3", coefs: [3, 2], op: "<=", rhs: 18 },
+      { name: "Horas de Mano de Obra", coefs: [1, 0], op: "<=", rhs: 4 },
+      { name: "Materia Prima", coefs: [0, 2], op: "<=", rhs: 12 },
+      { name: "Capacidad de Planta", coefs: [3, 2], op: "<=", rhs: 18 },
     ],
   });
   const [transport, setTransportState] = useState<TransportData>({

@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useOpti } from "@/lib/opticore-context";
-import { Building2, Package, Clock, Target } from "lucide-react";
+import { Building2 } from "lucide-react";
 
 export function ProfileSection() {
   const { profile, setProfile } = useOpti();
@@ -16,7 +16,7 @@ export function ProfileSection() {
               Configuración del Perfil de Empresa
             </CardTitle>
             <CardDescription className="mt-1">
-              Define la identidad y los recursos limitantes para el modelo de optimización.
+              Define la identidad de tu empresa para personalizar el análisis estratégico.
             </CardDescription>
           </div>
         </div>
@@ -40,54 +40,7 @@ export function ProfileSection() {
             />
           </div>
         </div>
-        <div className="rounded-xl border border-border/60 bg-background/40 p-4">
-          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-3">
-            Recursos limitantes (variables del modelo)
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <ResourceInput
-              icon={<Package className="h-4 w-4 text-primary" />}
-              label="Recurso 1"
-              value={profile.resource1Name}
-              onChange={(v) => setProfile({ resource1Name: v })}
-            />
-            <ResourceInput
-              icon={<Clock className="h-4 w-4 text-accent" />}
-              label="Recurso 2"
-              value={profile.resource2Name}
-              onChange={(v) => setProfile({ resource2Name: v })}
-            />
-            <ResourceInput
-              icon={<Target className="h-4 w-4 text-chart-3" />}
-              label="Demanda"
-              value={profile.demandName}
-              onChange={(v) => setProfile({ demandName: v })}
-            />
-          </div>
-        </div>
       </CardContent>
     </Card>
-  );
-}
-
-function ResourceInput({
-  icon,
-  label,
-  value,
-  onChange,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label className="flex items-center gap-2 text-xs text-muted-foreground">
-        {icon}
-        {label}
-      </Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} />
-    </div>
   );
 }
